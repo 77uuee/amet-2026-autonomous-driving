@@ -25,9 +25,12 @@ complete before arrival and tunable on the spot without a restart.
 
 ![offline replay of the perception pipeline](docs/replay_demo.gif)
 
-*Offline replay: cyan = detected road, magenta circle = aim point, yellow rows =
-near/mid/far scan lines. Produced by `tools/replay.py` from recorded frames — no
-simulator required.*
+*Offline replay of a continuous stretch of driving. Cyan = the drivable road
+region, green = the fitted centre line, magenta = the aim point, yellow rows =
+the near/mid/far scan lines, orange = traffic cones subtracted from the road.
+Watch the speed readout: it holds ~0.52 m/s on the straight and drops to
+~0.26 m/s through the corner — that is the curvature speed schedule working.
+Produced by `tools/replay.py` from recorded frames, no simulator required.*
 
 ---
 
