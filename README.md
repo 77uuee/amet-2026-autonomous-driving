@@ -25,12 +25,16 @@ complete before arrival and tunable on the spot without a restart.
 
 ![offline replay of the perception pipeline](docs/replay_demo.gif)
 
-*Offline replay of a continuous stretch of driving. Cyan = the drivable road
-region, green = the fitted centre line, magenta = the aim point, yellow rows =
-the near/mid/far scan lines, orange = traffic cones subtracted from the road.
-Watch the speed readout: it holds ~0.52 m/s on the straight and drops to
-~0.26 m/s through the corner — that is the curvature speed schedule working.
-Produced by `tools/replay.py` from recorded frames, no simulator required.*
+*The traffic light sequence, replayed offline. The car accelerates to 0.59 m/s,
+holds at **0.00 m/s** while the light reads red, and pulls away once green is
+confirmed. Cyan = the drivable road region, green = the fitted centre line,
+magenta = the aim point, yellow rows = the near/mid/far scan lines.*
+
+*This is `tools/replay.py` running the perception and control code over frames
+recorded with `tools/grab.py` while driving the course manually. It is
+**open-loop**: the overlay shows what the controller commands, but the motion in
+the frames is the human driver's. Closed-loop behaviour was only ever verified in
+the simulator itself.*
 
 ---
 
