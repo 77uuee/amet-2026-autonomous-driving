@@ -1,0 +1,95 @@
+# ============================================================
+#  AMET 2026 tuning parameters
+#  주행 중에도 자동 리로드된다 (약 0.5초마다 mtime 체크).
+#  재시작 없이 값만 바꿔서 즉시 반영 -> 현장 10분 세션의 생명줄.
+#  파싱에 실패하면 직전 설정을 유지하고 경고만 찍는다.
+# ============================================================
+
+general:
+  control_hz: 20.0
+  proc_width: 320           # 인지용 다운스케일 폭 (px)
+  debug_view: true          # MYAPP 탭(포트 5000) 오버레이. 대회 제출 시 false
+  log_dir: ""               # 경로를 넣으면 프레임+CSV 기록
+  log_every: 3
+
+drive:
+  v_max: 0.60               # 직선 최고 속도 (m/s)  <- 완주부터 확인하고 올릴 것
+  v_min: 0.26               # 급코너 최저 속도
+  v_start: 0.28
+  accel_limit: 1.0
+  decel_limit: 3.0
+  steer_max_deg: 20.0       # 하드웨어 한계
+  steer_sign: 1.0           # 조향이 반대로 먹으면 -1.0
+  steer_rate_deg: 260.0
+
+# ---------- 주황 중앙 점선 추종 ----------
+centerline:
+  h_lo: 5                   # 주황 HSV 하한 H (OpenCV 0~179)
+  h_hi: 28                  # 상한. 너무 넓히면 흙/갈색을 먹는다
+  s_min: 110
+  v_min: 110
+  bands: 10                 # 아래->위로 훑을 밴드 개수
+  window: 0.16              # 밴드 탐색창 폭 (화면 폭 비율). 분기에서 옆길을 무시하는 핵심
+  min_band_px: 12           # 밴드 하나를 인정할 최소 주황 픽셀 수
+  min_points: 3             # 이만큼 밴드를 찾아야 중앙선으로 인정
+  hold_last: true           # 한두 프레임 놓치면 직전 피팅 유지
+
+lane:
+  roi_top: 0.50             # 이 위쪽은 무시 (하늘/배경)
+  roi_bottom: 0.98
+  # 아스팔트 마스크 (도로 폭 측정 + 중앙선 못 찾을 때 폴백)
+  road_s_max: 95
+  road_v_min: 22
+  road_v_max: 255
+  grass_h_lo: 30
+  grass_h_hi: 95
+  grass_s_min: 55
+  min_road_width: 0.10
+  # 중앙선 기준 횡방향 오프셋 (도로 반폭 단위)
+  #   0.0  = 주황 점선 위를 그대로 주행 (최단 경로)
+  #  +0.45 = 우측 차선 한가운데 (마주오는 차가 있으면 이걸로)
+  #  -0.45 = 좌측 차선
+  lane_offset: 0.0
+  edge_margin: 0.10         # 조준점이 도로 가장자리에 이만큼은 못 붙는다
+  look_near: 0.90
+  look_mid: 0.62
+  look_far: 0.30
+  aim_blend: 0.55           # 0=근거리만, 1=원거리만. 클수록 코너 진입이 빠름
+  lost_timeout: 0.6
+
+control:
+  kp: 24.0
+  kd: 4.5
+  ki: 0.0
+  curve_gain: 2.1           # 코너 감속 강도. 이탈하면 올릴 것
+  curve_lpf: 0.35
+
+traffic_light:
+  enabled: true
+  roi_top: 0.00             # 신호등은 화면 위쪽. 0부터 봐도 됨
+  roi_bottom: 0.75          # 도로 픽셀은 아래 exclude_road 가 따로 제거한다
+  exclude_road: true        # 아스팔트 위 픽셀은 신호등이 아니다 <- 최강 오검출 필터
+  min_area_px: 14           # 이보다 작으면 무시
+  act_area_px: 30           # 이 크기 이상일 때만 판정에 사용 (충분히 가까움)
+  max_area_px: 4000
+  min_fill: 0.50            # 외접 사각형 대비 채움비 (원형 램프)
+  aspect_tol: 2.2
+  confirm_frames: 3         # 연속 N프레임이면 인정
+  release_frames: 5
+  red_release_frames: 14    # 빨강 해제는 훨씬 신중하게 (10초 페널티)
+  no_light_frames: 20       # 출발선에 신호등이 없는 코스 대비
+  start_max_wait: 30.0      # 최후 안전장치: 이 시간 지나면 무조건 출발 (DNF 방지)
+  yellow_treated_as_red: false   # 켜면 도로의 주황 점선을 빨강으로 오인할 위험
+  red_hsv:   [[0, 130, 140], [8, 255, 255], [170, 130, 140], [179, 255, 255]]
+  green_hsv: [[45, 110, 130], [92, 255, 255]]
+
+obstacle:
+  enabled: true
+  topic: "/scan_filtered"
+  fov_deg: 26.0
+  angle_offset_deg: 0.0
+  stop_dist: 0.32
+  slow_dist: 0.85
+  min_valid: 0.05
+  percentile: 20
+  clear_frames: 4

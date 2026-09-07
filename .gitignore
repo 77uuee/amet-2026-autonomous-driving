@@ -1,0 +1,40 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# --- macOS ---
+.DS_Store
+._*
+
+# --- Archives / distribution bundles (rebuilt from source) ---
+*.zip
+
+# --- Simulator capture data (regenerate with tools/grab.py) ---
+capture/
+capture2/
+log/
+logs/
+
+# --- Large media: a compressed GIF is committed under docs/ instead ---
+*.mp4
+*.avi
+*.mkv
+
+# --- External material, not authored in this repo ---
+*.pdf
+
+# --- Agent/editor working files ---
+CLAUDE.md
+CLAUDE_sim.md
+.claude/
+.idea/
+.vscode/
+
+# --- Secrets ---
+.env
+*.pem
+*.key
+credentials*.json

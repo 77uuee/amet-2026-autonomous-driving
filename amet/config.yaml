@@ -1,0 +1,118 @@
+# ============================================================
+#  AMET 2026 tuning parameters
+#  주행 중에도 자동 리로드된다 (약 0.5초마다 mtime 체크).
+#  재시작 없이 값만 바꿔서 즉시 반영 -> 현장 10분 세션의 생명줄.
+#  파싱에 실패하면 직전 설정을 유지하고 경고만 찍는다.
+# ============================================================
+
+general:
+  control_hz: 20.0
+  proc_width: 320           # 인지용 다운스케일 폭 (px)
+  debug_view: true          # MYAPP 탭(포트 5000) 오버레이. 대회 제출 시 false
+  log_dir: ""               # 경로를 넣으면 프레임+CSV 기록
+  log_every: 3
+
+drive:
+  v_max: 0.60               # 직선 최고 속도 (m/s)  <- 완주부터 확인하고 올릴 것
+  v_min: 0.26               # 급코너 최저 속도
+  v_start: 0.28
+  accel_limit: 1.0
+  decel_limit: 3.0
+  steer_max_deg: 20.0       # 하드웨어 한계
+  steer_sign: 1.0           # 조향이 반대로 먹으면 -1.0
+  steer_rate_deg: 180.0     # 떨림 상한. 0->20deg 0.11초로 헤어핀 응답은 충분
+
+# ---------- 주황 중앙 점선 추종 ----------
+centerline:
+  h_lo: 5                   # 주황 HSV 하한 H (OpenCV 0~179)
+  h_hi: 28                  # 상한. 너무 넓히면 흙/갈색을 먹는다
+  s_min: 110
+  v_min: 110
+  bands: 16                 # 점선 간격을 더 촘촘히 훑는다
+  window: 0.28              # 0.16은 재획득 실패. 0.45까지 넓혀도 +1pp뿐이라 분기 배제력을 남긴다
+  min_band_px: 4            # 밴드가 얇아진 만큼 하향 (2~4 동률, 노이즈 여유로 4)
+  min_points: 2             # 3은 379~386에서 center<->road 격프레임 진동 (steer 20deg<->7deg)
+  hold_last: false
+  extrapolate: 0.08         # 피팅 지지구간 밖으로 이만큼(ROI 높이 비율)만 외삽 허용.
+                            # 넘으면 도로 마스크 중심을 쓴다 -> 90도 코너가 곡률로 드러난다
+
+lane:
+  roi_top: 0.45             # 지평선을 조금 더 포함 -> LANE_LOST 2.0% -> 0.8%
+  roi_bottom: 0.98
+  # 아스팔트 마스크 (도로 폭 측정 + 중앙선 못 찾을 때 폴백)
+  road_s_max: 122          # 아스팔트 S 실측 p50=112 p95=119 -> 95는 도로를 통째로 잘랐다
+  road_v_min: 22
+  road_v_max: 255
+  grass_h_lo: 30
+  grass_h_hi: 95
+  grass_s_min: 55
+  min_road_width: 0.10
+  # 중앙선 기준 횡방향 오프셋 (도로 반폭 단위)
+  #   0.0  = 주황 점선 위를 그대로 주행 (최단 경로)
+  #  +0.45 = 우측 차선 한가운데 (마주오는 차가 있으면 이걸로)
+  #  -0.45 = 좌측 차선
+  lane_offset: 0.0
+  edge_margin: 0.10         # 조준점이 도로 가장자리에 이만큼은 못 붙는다
+  look_near: 0.65           # 0.90은 점선이 없는 ROI 최하단 -> 피팅 구간 밖 외삽으로 _prev_base가 화면 밖을 가리켰다
+  look_mid: 0.45            # look_near=0.65 와 간격 확보 (0.62면 near/mid 가 겹쳐 aim_blend 가 무의미)
+  look_far: 0.30
+  aim_blend: 0.55           # 0=근거리만, 1=원거리만. 클수록 코너 진입이 빠름
+  lost_timeout: 0.6
+
+control:
+  kp: 24.0
+  kd: 1.5                   # 4.5는 dt=0.05 때문에 인지노이즈를 20배 증폭 (dsteer 4.08 -> 2.09 deg/frame)
+  ki: 0.0
+  curve_steer: 10.0         # 곡률 -> 조향 피드포워드. 90도 코너는 점선이 화면에서 수평이라
+                            # err 이 거의 0 으로 나오므로 이게 없으면 감속만 하고 안 꺾는다.
+                            # 20 은 far 행이 잔디에 오염된 프레임(6%)에서 역방향으로 9deg 까지
+                            # 작용해서 낮췄다. 시뮬에서 이상하면 0 으로 두면 감속만 동작한다.
+                            # 나오므로 이게 없으면 감속만 하고 안 꺾는다.
+                            # 실측 |curv|: 직선 <=0.08(=1.7deg), 90도코너 0.51(=10.2deg)
+  curve_gain: 2.1           # 코너 감속 강도. 이탈하면 올릴 것
+  curve_lpf: 0.35
+
+traffic_light:
+  enabled: true
+  roi_top: 0.00             # 신호등은 화면 위쪽. 0부터 봐도 됨
+  roi_bottom: 0.75          # 도로 픽셀은 아래 exclude_road 가 따로 제거한다
+  exclude_road: true        # 아스팔트 위 픽셀은 신호등이 아니다 <- 최강 오검출 필터
+  min_area_px: 14           # 이보다 작으면 무시
+  act_area_px: 30           # 이 크기 이상일 때만 판정에 사용 (충분히 가까움)
+  max_area_px: 4000
+  min_fill: 0.50            # 외접 사각형 대비 채움비 (원형 램프)
+  aspect_tol: 1.30          # 램프는 원(asp 0.95~1.00), 라바콘은 세로 삼각(0.45~0.73). 2.2는 콘을 초록불로 오인 -> 오검출 73프레임 -> 0
+  confirm_frames: 3         # 연속 N프레임이면 인정
+  release_frames: 5
+  red_release_frames: 14    # 빨강 해제는 훨씬 신중하게 (10초 페널티)
+  no_light_frames: 100      # 출발선에 신호등이 없는 코스 대비 (20Hz -> 5초).
+                            # 20(=1초)은 너무 짧다. 노란불처럼 빨강도 초록도 아닌
+                            # 상태나 한두 프레임 검출 실패에서 바로 출발해버린다.
+                            # 신호등이 실제로 있으면 즉시 검출되므로 손해가 없다.
+  start_max_wait: 30.0      # 최후 안전장치: 이 시간 지나면 무조건 출발 (DNF 방지)
+  yellow_treated_as_red: true    # 노랑도 정지. 이 시뮬 신호는 노랑->빨강->초록 순서라
+                            # 노랑에 출발하면 곧 빨강이다. 채점상 헛멈춤은 0초.
+                            # 주황 점선 오인 위험은 aspect_tol(1.30)과 exclude_road 가 막는다.
+  red_hsv:   [[0, 130, 140], [8, 255, 255], [170, 130, 140], [179, 255, 255]]
+  green_hsv: [[45, 110, 130], [92, 255, 255]]
+
+obstacle:
+  enabled: true
+  # --- 초록 라바콘 회피 (카메라) ---
+  # LiDAR 는 감속/정지만 한다. 콘은 도로 마스크에서 빼서 조준점이 알아서 비켜가게 한다.
+  # 실측: 콘 H 59~61 S 229~255 / 잔디 H 32~35 S 95~148
+  cone_avoid: true
+  cone_h_lo: 50
+  cone_h_hi: 75
+  cone_s_min: 170           # 잔디(S<160)와 가르는 핵심 값
+  cone_v_min: 120
+  cone_min_px: 40           # 이보다 작으면 무시 (멀리 있는 콘)
+  cone_pad_px: 9            # 콘 주변 여유 (px). 크면 더 크게 돌아간다
+  topic: "/scan_filtered"
+  fov_deg: 26.0
+  angle_offset_deg: 0.0
+  stop_dist: 0.32
+  slow_dist: 0.85
+  min_valid: 0.05
+  percentile: 20
+  clear_frames: 4
